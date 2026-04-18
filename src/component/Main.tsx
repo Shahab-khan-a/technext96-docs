@@ -14,12 +14,24 @@ interface Doc {
   created_at: string;
 }
 
-export const Main = () => {
+interface MainProps {
+  initialDoc?: Doc | null;
+  slug?: string;
+}
+
+export const Main = ({ initialDoc = null, slug: initialSlug }: MainProps) => {
   const pathname = usePathname();
-  const [dynamicDoc, setDynamicDoc] = useState<Doc | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [dynamicDoc, setDynamicDoc] = useState<Doc | null>(initialDoc || null);
+  const [isLoading, setIsLoading] = useState(!initialDoc);
 
   useEffect(() => {
+    // If we already have initial doc from server, don't refetch
+    if (initialDoc) {
+      setDynamicDoc(initialDoc);
+      setIsLoading(false);
+      return;
+    }
+
     const fetchDynamicDoc = async () => {
       const pathParts = pathname.split('/');
       
@@ -69,7 +81,7 @@ export const Main = () => {
     };
 
     fetchDynamicDoc();
-  }, [pathname]);
+  }, [pathname, initialDoc]);
 
   // Handle Dynamic Docs (including default Getting Started)
   if (dynamicDoc) {

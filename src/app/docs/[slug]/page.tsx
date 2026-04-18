@@ -1,33 +1,39 @@
 import { Main } from "@/component/Main";
-import { supabase, slugify } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { redirect } from "next/navigation";
 
 export async function generateStaticParams() {
-    // Fetch all document IDs or titles (slugs) from Supabase
-    const { data: docs } = await supabase.from('docs').select('id, title');
+    try {
+        const { data: docs } = await supabase.from('docs').select('id');
+        const { data: tutorials } = await supabase
+            .from('tutorials')
+            .select('slug')
+            .eq('is_active', true);
 
-    // Fetch tutorials from tutorials table
-    const { data: tutorials } = await supabase
-        .from('tutorials')
-        .select('slug')
-        .eq('is_active', true);
+        const tutorialSlugs = tutorials ? tutorials.map((t) => t.slug) : [];
+        const docIds = docs ? docs.map((doc) => String(doc.id)) : [];
+        const allSlugs = [...docIds, ...tutorialSlugs].filter(Boolean);
 
-    // Convert tutorials to slugs
-    const tutorialSlugs = tutorials ? tutorials.map((t) => t.slug) : [];
+        if (allSlugs.length === 0) return [{ slug: 'placeholder' }];
 
-    const dynamicSlugs = docs ? docs.map((doc) => doc.title ? slugify(doc.title) : String(doc.id)) : [];
-
-    const allSlugs = [...dynamicSlugs, ...tutorialSlugs].filter(Boolean);
-
-    return allSlugs.map((slug) => ({
-        slug: slug,
-    }));
+        return allSlugs.map((slug) => ({ slug: slug }));
+    } catch {
+        return [{ slug: 'placeholder' }];
+    }
 }
 
 export const dynamicParams = false;
 
 interface PageProps {
     params: Promise<{ slug: string }>;
+}
+
+interface Doc {
+    id: string;
+    title: string;
+    content: string;
+    category: string;
+    created_at: string;
 }
 
 export default async function DocPage({ params }: PageProps) {
@@ -45,6 +51,20 @@ export default async function DocPage({ params }: PageProps) {
         redirect(`/tutorial/${slug}`);
     }
 
-    // Otherwise, show the static content via Main component
-    return <Main />;
+    // Fetch the document on the server side
+    let doc: Doc | null = null;
+    try {
+        const { data } = await supabase
+            .from('docs')
+            .select('*')
+            .eq('id', slug)
+            .maybeSingle();
+        
+        doc = data;
+    } catch (err) {
+        console.error("Error fetching doc:", err);
+    }
+
+    // Pass the doc data to Main component
+    return <Main initialDoc={doc} slug={slug} />;
 }

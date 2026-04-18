@@ -1,7 +1,6 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { parseDocContent } from "@/lib/docs-parser";
 
 interface Doc {
     id: string;
@@ -70,32 +69,10 @@ export default function ServiceDocs({ docs, isLoading }: ServiceDocsProps) {
 
                     {/* Content */}
                     {doc.content && (
-                        <div className="space-y-6 mb-6">
-                            {parseDocContent(doc.content).map((block, bIndex) => {
-                                if (block.type === 'title') {
-                                    return (
-                                        <h3 key={bIndex} className="text-xl font-semibold text-white mt-8 mb-4 border-l-2 border-amber-400 pl-4">
-                                            {block.content}
-                                        </h3>
-                                    );
-                                }
-                                if (block.type === 'code') {
-                                    return (
-                                        <div key={bIndex} className="bg-gray-900 p-4 rounded-lg border border-gray-800 overflow-x-auto my-4 shadow-inner">
-                                            <pre className="text-xs sm:text-sm text-gray-300 font-mono leading-relaxed">
-                                                <code>{block.content}</code>
-                                            </pre>
-                                        </div>
-                                    );
-                                }
-                                // Default text
-                                return (
-                                    <p key={bIndex} className="text-gray-300 leading-relaxed whitespace-pre-wrap">
-                                        {block.content}
-                                    </p>
-                                );
-                            })}
-                        </div>
+                        <div 
+                            className="prose prose-invert max-w-none text-gray-300 leading-relaxed space-y-4 mb-6"
+                            dangerouslySetInnerHTML={{ __html: doc.content }}
+                        />
                     )}
 
                     {/* Date */}

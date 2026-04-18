@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { ChevronRight, Briefcase, LayoutGrid, BookOpen } from "lucide-react";
-import { supabase, slugify } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 import { groups as initialGroups } from "@/config/docs";
 import type { Group, Section, Item } from "@/config/docs";
@@ -50,7 +50,7 @@ export default function Left({
             .filter(d => d.category === cat)
             .map(d => ({
               name: d.title,
-              path: `/docs/${slugify(d.title)}`
+              path: `/docs/${d.id}`
             }))
         }));
 

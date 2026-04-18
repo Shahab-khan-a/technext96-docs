@@ -1,8 +1,9 @@
+"use client";
+
 import { usePathname } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { docsConfig } from "@/config/docs";
 import { supabase, slugify } from "@/lib/supabase";
-import { parseDocContent } from "@/lib/docs-parser";
 
 interface NavItem {
     name: string;
@@ -14,7 +15,7 @@ interface DocConfig {
     sections: NavItem[];
 }
 
-export default function RightSidebar() {
+export default function RightSidebar({ onItemClick }: { onItemClick?: () => void }) {
     const pathname = usePathname();
     const [activeId, setActiveId] = useState<string>("");
     const [dynamicConfig, setDynamicConfig] = useState<DocConfig | null>(null);
@@ -24,44 +25,57 @@ export default function RightSidebar() {
     const staticConfig = docsConfig[pathname];
 
     useEffect(() => {
+        // Reset dynamic config when pathname changes
+        setDynamicConfig(null);
+        setActiveId("");
+
         const fetchDynamicNav = async () => {
             const pathParts = pathname.split('/');
 
             // Case 1: Single Dynamic Document
             if (pathParts.length === 3 && pathParts[1] === 'docs' && !staticConfig) {
-                const currentSlug = decodeURIComponent(pathParts[2]);
+                const docId = decodeURIComponent(pathParts[2]);
                 setIsLoading(true);
                 try {
-                    // Fetch all docs to find matching slug
-                    const { data: allDocs } = await supabase
+                    const { data } = await supabase
                         .from('docs')
-                        .select('id, title');
+                        .select('title, content')
+                        .eq('id', docId)
+                        .maybeSingle();
 
-                    const matchedDoc = allDocs?.find(d => slugify(d.title) === currentSlug);
+                    if (data && data.content) {
+                        setDynamicConfig({
+                            title: data.title,
+                            sections: []
+                        });
+                        
+                        const buildSections = (attempt = 0) => {
+                            setTimeout(() => {
+                                const article = document.querySelector('.ql-editor-view');
+                                if (!article && attempt < 10) return buildSections(attempt + 1);
+                                if (!article) return;
 
-                    if (matchedDoc) {
-                        const { data, error } = await supabase
-                            .from('docs')
-                            .select('title, content')
-                            .eq('id', matchedDoc.id)
-                            .maybeSingle();
+                                const headings = Array.from(article.querySelectorAll('h2, h3'));
+                                if (headings.length === 0 && attempt < 10) return buildSections(attempt + 1);
 
-                        if (data && data.content) {
-                            const blocks = parseDocContent(data.content);
-                            const sections = blocks
-                                .filter(block => block.type === 'title')
-                                .map(block => ({
-                                    name: block.content,
-                                    href: `#${block.content.toLowerCase().replace(/\s+/g, '-')}`
-                                }));
+                                const usedIds = new Set<string>();
+                                const sections = headings.map(h => {
+                                    const heading = h as HTMLElement;
+                                    const text = heading.textContent?.trim() || '';
+                                    let baseId = slugify(text);
+                                    let finalId = baseId;
+                                    let counter = 1;
+                                    while (usedIds.has(finalId)) {
+                                        finalId = `${baseId}-${counter++}`;
+                                    }
+                                    usedIds.add(finalId);
+                                    return { name: text, href: `#${finalId}` };
+                                }).filter(s => s.name && s.href !== '#');
 
-                            setDynamicConfig({
-                                title: data.title,
-                                sections: sections
-                            });
-                        } else {
-                            setDynamicConfig(null);
-                        }
+                                setDynamicConfig({ title: data.title, sections });
+                            }, 200);
+                        };
+                        buildSections();
                     } else {
                         setDynamicConfig(null);
                     }
@@ -179,16 +193,19 @@ export default function RightSidebar() {
                     {isLoading ? "Loading..." : (currentConfig.title === "Getting Started" ? "On This Page" : currentConfig.title)}
                 </h2>
                 <nav className="space-y-1">
-                    {navItems.map((item) => {
+                    {navItems.map((item, index) => {
                         const targetId = item.href.substring(1);
                         const isActive = activeId === targetId;
                         return (
                             <a
-                                key={item.href}
+                                key={`${item.href}-${index}`}
                                 href={item.href}
                                 onClick={(e) => {
                                     // Instant visual feedback
                                     setActiveId(targetId);
+                                    
+                                    // Close mobile sidebar
+                                    if (onItemClick) onItemClick();
 
                                     // Smooth scroll if needed (optional since browser handles href=#)
                                     const element = document.getElementById(targetId);
