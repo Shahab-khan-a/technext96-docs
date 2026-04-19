@@ -2,27 +2,7 @@ import { Main } from "@/component/Main";
 import { supabase } from "@/lib/supabase";
 import { redirect } from "next/navigation";
 
-export async function generateStaticParams() {
-    try {
-        const { data: docs } = await supabase.from('docs').select('id');
-        const { data: tutorials } = await supabase
-            .from('tutorials')
-            .select('slug')
-            .eq('is_active', true);
-
-        const tutorialSlugs = tutorials ? tutorials.map((t) => t.slug) : [];
-        const docIds = docs ? docs.map((doc) => String(doc.id)) : [];
-        const allSlugs = [...docIds, ...tutorialSlugs].filter(Boolean);
-
-        if (allSlugs.length === 0) return [{ slug: 'placeholder' }];
-
-        return allSlugs.map((slug) => ({ slug: slug }));
-    } catch {
-        return [{ slug: 'placeholder' }];
-    }
-}
-
-export const dynamicParams = false;
+export const dynamic = 'force-dynamic';
 
 interface PageProps {
     params: Promise<{ slug: string }>;
