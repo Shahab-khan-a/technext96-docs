@@ -40,7 +40,7 @@ export async function searchDocs(query: string): Promise<SearchResult[]> {
             .from("docs")
             .select("id, title, category")
             .or(`title.ilike.%${query}%,content.ilike.%${query}%,category.ilike.%${query}%`)
-            .limit(5);
+            .limit(5) as { data: { id: string; title: string; category: string }[] | null; error: unknown };
 
         if (!error && data) {
             data.forEach(doc => {

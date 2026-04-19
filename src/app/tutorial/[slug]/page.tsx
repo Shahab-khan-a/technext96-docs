@@ -6,7 +6,7 @@ export async function generateStaticParams() {
         const { data: tutorials } = await supabase
             .from('tutorials')
             .select('slug')
-            .eq('is_active', true);
+            .eq('is_active', true) as { data: { slug: string }[] | null };
 
         if (!tutorials || tutorials.length === 0) return [];
 
@@ -34,7 +34,7 @@ export default async function TutorialPage({ params }: PageProps) {
         .select('*')
         .eq('slug', slug)
         .eq('is_active', true)
-        .single();
+        .single() as { data: { title: string; description: string; content: unknown } | null; error: unknown };
 
     if (error || !tutorial) {
         notFound();

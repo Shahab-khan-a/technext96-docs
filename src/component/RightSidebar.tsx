@@ -41,7 +41,7 @@ export default function RightSidebar({ onItemClick }: { onItemClick?: () => void
                         .from('docs')
                         .select('title, content')
                         .eq('id', docId)
-                        .maybeSingle();
+                        .maybeSingle() as { data: { title: string; content: string } | null };
 
                     if (data && data.content) {
                         setDynamicConfig({
@@ -93,7 +93,7 @@ export default function RightSidebar({ onItemClick }: { onItemClick?: () => void
                     const { data, error } = await supabase
                         .from('docs')
                         .select('id, title')
-                        .order('created_at', { ascending: false });
+                        .order('created_at', { ascending: false }) as { data: { id: string; title: string }[] | null; error: unknown };
 
                     if (data) {
                         setDynamicConfig({

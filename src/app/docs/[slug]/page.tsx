@@ -4,6 +4,10 @@ import { redirect } from "next/navigation";
 
 export const dynamic = 'force-dynamic';
 
+export function generateStaticParams() {
+    return [];
+}
+
 interface PageProps {
     params: Promise<{ slug: string }>;
 }

@@ -33,7 +33,7 @@ export default function Left({
         const { data: docs, error } = await supabase
           .from('docs')
           .select('id, title, category')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false }) as { data: DynamicDoc[] | null; error: unknown };
 
         if (error) throw error;
         
@@ -41,7 +41,7 @@ export default function Left({
         setDynamicDocs(allDocs);
 
         // Get unique categories from the docs
-        const categories = Array.from(new Set(allDocs.map(d => d.category)));
+        const categories = Array.from(new Set(allDocs.map(d => d.category).filter((c): c is string => !!c)));
 
         // Build sections based on categories found in Supabase
         const dynamicSections: Section[] = categories.map(cat => ({

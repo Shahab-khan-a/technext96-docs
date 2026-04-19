@@ -44,7 +44,7 @@ export const Main = ({ initialDoc = null, slug: initialSlug }: MainProps) => {
               // 1. Fetch all docs to find the one matching the slug
               const { data: allDocs } = await supabase
                 .from('docs')
-                .select('id, title');
+                .select('id, title') as { data: { id: string; title: string }[] | null };
 
               const matchedDoc = allDocs?.find(d => slugify(d.title) === currentSlug);
 
