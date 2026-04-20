@@ -1,5 +1,12 @@
 {
   "projects": {
     "default": "app-technext96"
+  },
+  "targets": {
+    "app-technext96": {
+      "hosting": {
+        "main": ["app-technext96"]
+      }
+    }
   }
 }

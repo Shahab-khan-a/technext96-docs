@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "npm run build && firebase deploy --only apphosting",
-    "deploy:preview": "firebase deploy --only apphosting --debug"
+    "deploy": "npm run build && firebase deploy --only hosting"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
