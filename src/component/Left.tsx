@@ -64,7 +64,7 @@ export default function Left({
         ]);
         
       } catch (err) {
-        console.error("Error fetching dynamic docs for sidebar:", err);
+        console.error("Error fetching dynamic docs for sidebar:", err instanceof Error ? err.message : JSON.stringify(err));
       }
     };
 
