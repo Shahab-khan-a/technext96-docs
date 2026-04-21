@@ -21,18 +21,15 @@ export default function RightSidebar({ onItemClick }: { onItemClick?: () => void
     const [dynamicConfig, setDynamicConfig] = useState<DocConfig | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Get static config for current page
     const staticConfig = docsConfig[pathname];
 
     useEffect(() => {
-        // Reset dynamic config when pathname changes
         setDynamicConfig(null);
         setActiveId("");
 
         const fetchDynamicNav = async () => {
             const pathParts = pathname.split('/');
 
-            // Case 1: Single Dynamic Document
             if (pathParts.length === 3 && pathParts[1] === 'docs' && !staticConfig) {
                 const docId = decodeURIComponent(pathParts[2]);
                 setIsLoading(true);
@@ -44,11 +41,8 @@ export default function RightSidebar({ onItemClick }: { onItemClick?: () => void
                         .maybeSingle() as { data: { title: string; content: string } | null };
 
                     if (data && data.content) {
-                        setDynamicConfig({
-                            title: data.title,
-                            sections: []
-                        });
-                        
+                        setDynamicConfig({ title: data.title, sections: [] });
+
                         const buildSections = (attempt = 0) => {
                             setTimeout(() => {
                                 const article = document.querySelector('.ql-editor-view');
@@ -65,9 +59,7 @@ export default function RightSidebar({ onItemClick }: { onItemClick?: () => void
                                     let baseId = slugify(text);
                                     let finalId = baseId;
                                     let counter = 1;
-                                    while (usedIds.has(finalId)) {
-                                        finalId = `${baseId}-${counter++}`;
-                                    }
+                                    while (usedIds.has(finalId)) { finalId = `${baseId}-${counter++}`; }
                                     usedIds.add(finalId);
                                     return { name: text, href: `#${finalId}` };
                                 }).filter(s => s.name && s.href !== '#');
@@ -85,23 +77,18 @@ export default function RightSidebar({ onItemClick }: { onItemClick?: () => void
                 } finally {
                     setIsLoading(false);
                 }
-            }
-            // Case 2: Potential Collection View (e.g. /docs or /service)
-            else if (pathname === '/docs' || pathname === '/service') {
+            } else if (pathname === '/docs' || pathname === '/service') {
                 setIsLoading(true);
                 try {
-                    const { data, error } = await supabase
+                    const { data } = await supabase
                         .from('docs')
                         .select('id, title')
-                        .order('created_at', { ascending: false }) as { data: { id: string; title: string }[] | null; error: unknown };
+                        .order('created_at', { ascending: false }) as { data: { id: string; title: string }[] | null };
 
                     if (data) {
                         setDynamicConfig({
                             title: "On This Page",
-                            sections: data.map(doc => ({
-                                name: doc.title,
-                                href: `#doc-${doc.id}`
-                            }))
+                            sections: data.map(doc => ({ name: doc.title, href: `#doc-${doc.id}` }))
                         });
                     }
                 } catch (err) {
@@ -109,8 +96,7 @@ export default function RightSidebar({ onItemClick }: { onItemClick?: () => void
                 } finally {
                     setIsLoading(false);
                 }
-            }
-            else {
+            } else {
                 setDynamicConfig(null);
             }
         };
@@ -118,7 +104,6 @@ export default function RightSidebar({ onItemClick }: { onItemClick?: () => void
         fetchDynamicNav();
     }, [pathname, staticConfig]);
 
-    // Use dynamic config if available, otherwise static, fallback to a safe default
     const currentConfig = dynamicConfig || staticConfig || (docsConfig && docsConfig["/docs/GettingStarted"]) || { title: "Documentation", sections: [] };
     const navItems = (currentConfig && currentConfig.sections) ? currentConfig.sections : [];
 
@@ -128,36 +113,24 @@ export default function RightSidebar({ onItemClick }: { onItemClick?: () => void
         let observer: IntersectionObserver | null = null;
         let retryCount = 0;
         const maxRetries = 10;
-
-        // Keep track of which elements are currently visible
         const visibleElements = new Set<string>();
 
         const connectObserver = () => {
-            const observerOptions = {
-                root: null,
-                rootMargin: "-80px 0px -70% 0px", // Trigger when heading is in the top 30% of view
-                threshold: 0,
-            };
+            const observerOptions = { root: null, rootMargin: "-80px 0px -70% 0px", threshold: 0 };
 
             const handleIntersect = (entries: IntersectionObserverEntry[]) => {
                 entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        visibleElements.add(entry.target.id);
-                    } else {
-                        visibleElements.delete(entry.target.id);
-                    }
+                    if (entry.isIntersecting) { visibleElements.add(entry.target.id); }
+                    else { visibleElements.delete(entry.target.id); }
                 });
 
-                // If multiple are visible, pick the topmost one
                 if (visibleElements.size > 0) {
                     const sorted = Array.from(visibleElements)
                         .map(id => ({ id, rect: document.getElementById(id)?.getBoundingClientRect() }))
                         .filter(item => item.rect)
                         .sort((a, b) => (a.rect?.top || 0) - (b.rect?.top || 0));
 
-                    if (sorted.length > 0) {
-                        setActiveId(sorted[0].id);
-                    }
+                    if (sorted.length > 0) setActiveId(sorted[0].id);
                 }
             };
 
@@ -167,10 +140,7 @@ export default function RightSidebar({ onItemClick }: { onItemClick?: () => void
             let observedCount = 0;
             navItems.forEach((item) => {
                 const element = document.getElementById(item.href.substring(1));
-                if (element) {
-                    observer?.observe(element);
-                    observedCount++;
-                }
+                if (element) { observer?.observe(element); observedCount++; }
             });
 
             if (observedCount < navItems.length && retryCount < maxRetries) {
@@ -180,16 +150,16 @@ export default function RightSidebar({ onItemClick }: { onItemClick?: () => void
         };
 
         connectObserver();
-
-        return () => {
-            observer?.disconnect();
-        };
+        return () => { observer?.disconnect(); };
     }, [pathname, navItems]);
 
     return (
-        <div className="w-full h-full bg-black border-l border-gray-800 p-6 flex flex-col">
+        <div
+            style={{ background: "#0d1117", borderLeft: "1px solid #1e2a3a" }}
+            className="w-full h-full p-6 flex flex-col"
+        >
             <div className="mb-8">
-                <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-6 px-3">
+                <h2 style={{ color: "#64748b", letterSpacing: "0.15em" }} className="text-xs font-semibold uppercase mb-6 px-3">
                     {isLoading ? "Loading..." : (currentConfig.title === "Getting Started" ? "On This Page" : currentConfig.title)}
                 </h2>
                 <nav className="space-y-1">
@@ -201,50 +171,49 @@ export default function RightSidebar({ onItemClick }: { onItemClick?: () => void
                                 key={`${item.href}-${index}`}
                                 href={item.href}
                                 onClick={(e) => {
-                                    // Instant visual feedback
                                     setActiveId(targetId);
-                                    
-                                    // Close mobile sidebar
                                     if (onItemClick) onItemClick();
-
-                                    // Smooth scroll if needed (optional since browser handles href=#)
                                     const element = document.getElementById(targetId);
                                     if (element) {
                                         e.preventDefault();
                                         element.scrollIntoView({ behavior: 'smooth' });
-                                        // Update URL without jump
                                         window.history.pushState(null, '', item.href);
                                     }
                                 }}
-                                className={`
-                                    group flex items-center px-4 py-2.5 text-sm transition-all duration-200 rounded-xl
-                                    active:scale-[0.97] active:bg-amber-400/10
-                                    ${isActive
-                                        ? "text-amber-400 bg-amber-400/8 font-bold shadow-[0_0_15px_rgba(251,191,36,0.05),inset_0_0_0_1px_rgba(251,191,36,0.15)]"
-                                        : "text-gray-400 hover:text-white hover:bg-white/5"
-                                    }
-                                `}
+                                style={isActive
+                                    ? {
+                                        color: "#00d4ff",
+                                        background: "rgba(0,212,255,0.06)",
+                                        boxShadow: "inset 0 0 0 1px rgba(0,212,255,0.15)"
+                                      }
+                                    : { color: "#64748b" }}
+                                className="group flex items-center px-4 py-2.5 text-sm transition-all duration-200 rounded-xl active:scale-[0.97] hover:text-white hover:bg-white/5"
                             >
-                                <span className={`
-                                    w-2 h-2 rounded-full mr-3 transition-all duration-500
-                                    ${isActive
-                                        ? "bg-amber-400 scale-100 shadow-[0_0_8px_rgba(251,191,36,0.6)]"
-                                        : "bg-gray-800 scale-50 group-hover:scale-75 group-hover:bg-gray-600"
-                                    }
-                                `} />
+                                <span
+                                    style={isActive
+                                        ? { background: "#00d4ff", boxShadow: "0 0 8px rgba(0,212,255,0.6)" }
+                                        : { background: "#1e2a3a" }}
+                                    className={`w-2 h-2 rounded-full mr-3 transition-all duration-500 ${isActive ? "scale-100" : "scale-50 group-hover:scale-75 group-hover:!bg-slate-500"}`}
+                                />
                                 <span className="truncate">{item.name}</span>
                             </a>
                         );
                     })}
                     {!isLoading && navItems.length === 0 && (
-                        <p className="px-3 text-xs text-gray-600 italic">No navigation items found.</p>
+                        <p style={{ color: "#334155" }} className="px-3 text-xs italic">No navigation items found.</p>
                     )}
                 </nav>
             </div>
 
-            <div className="mt-auto pt-8 border-t border-gray-800/50">
-                <div className="p-4 bg-linear-to-br from-amber-400/10 to-transparent rounded-2xl border border-amber-400/10">
-                    <p className="text-xs text-amber-400/60 leading-relaxed font-medium">
+            <div style={{ borderTop: "1px solid #1e2a3a" }} className="mt-auto pt-8">
+                <div
+                    style={{
+                        background: "linear-gradient(135deg, rgba(0,212,255,0.06), transparent)",
+                        border: "1px solid rgba(0,212,255,0.1)"
+                    }}
+                    className="p-4 rounded-2xl"
+                >
+                    <p style={{ color: "rgba(0,212,255,0.5)" }} className="text-xs leading-relaxed font-medium">
                         Need help? Check our community forums or contact support.
                     </p>
                 </div>

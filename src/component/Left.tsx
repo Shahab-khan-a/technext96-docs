@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { ChevronRight, Briefcase, LayoutGrid, BookOpen } from "lucide-react";
+import { ChevronRight, BookOpen } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 import { groups as initialGroups } from "@/config/docs";
@@ -29,21 +29,18 @@ export default function Left({
   useEffect(() => {
     const fetchDynamicDocs = async () => {
       try {
-        // Fetch ALL documents to build the navigation
         const { data: docs, error } = await supabase
           .from('docs')
           .select('id, title, category')
           .order('created_at', { ascending: false }) as { data: DynamicDoc[] | null; error: unknown };
 
         if (error) throw error;
-        
+
         const allDocs = docs || [];
         setDynamicDocs(allDocs);
 
-        // Get unique categories from the docs
         const categories = Array.from(new Set(allDocs.map(d => d.category).filter((c): c is string => !!c)));
 
-        // Build sections based on categories found in Supabase
         const dynamicSections: Section[] = categories.map(cat => ({
           title: cat,
           items: allDocs
@@ -54,7 +51,6 @@ export default function Left({
             }))
         }));
 
-        // Update navigation to only show dynamic content
         setNavGroups([
           {
             title: "Documentation",
@@ -62,7 +58,7 @@ export default function Left({
             sections: dynamicSections
           }
         ]);
-        
+
       } catch (err) {
         console.error("Error fetching dynamic docs for sidebar:", err instanceof Error ? err.message : JSON.stringify(err));
       }
@@ -70,14 +66,13 @@ export default function Left({
 
     fetchDynamicDocs();
 
-    // Subscribe to changes
     const channel1 = supabase
       .channel('sidebar-docs-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'docs' }, () => {
         fetchDynamicDocs();
       })
       .subscribe();
-      
+
     return () => {
       supabase.removeChannel(channel1);
     };
@@ -101,17 +96,18 @@ export default function Left({
     if (foundGroup) setOpenGroup(foundGroup);
     if (foundSection) setOpenSection(foundSection);
 
-    // If it's a dynamic doc, open Service group
     if (pathname.startsWith('/docs/') && !navGroups.some(g => g.sections.some(s => s.items.some(i => i.path === pathname)))) {
-      setOpenGroup("Service");
-      setOpenSection("Published Docs");
+      setOpenGroup("Documentation");
     }
-  }, [pathname]);
+  }, [pathname, navGroups]);
 
   return (
-    <div className="w-full h-full overflow-y-auto bg-black border-r border-gray-800 flex flex-col pt-6 pb-20 custom-scrollbar">
+    <div
+      style={{ background: "#0d1117", borderRight: "1px solid #1e2a3a" }}
+      className="w-full h-full overflow-y-auto flex flex-col pt-6 pb-20 custom-scrollbar"
+    >
       <div className="px-6 mb-6">
-        <h2 className="text-[10px] font-bold text-gray-500 uppercase tracking-[2px] mb-4">
+        <h2 style={{ color: "#64748b", letterSpacing: "2px" }} className="text-[10px] font-bold uppercase mb-4">
           Documentation Hub
         </h2>
       </div>
@@ -123,65 +119,59 @@ export default function Left({
 
           return (
             <div key={group.title} className="space-y-1">
-              {/* Group Header Button */}
               <button
                 onClick={() => setOpenGroup(isGroupOpen ? null : group.title)}
-                className={`flex items-center gap-3 w-full px-4 py-3 text-left rounded-xl transition-all group border ${isGroupOpen
-                  ? "text-amber-400 bg-amber-400/5 border-amber-400/20 shadow-[0_0_20px_rgba(251,191,36,0.05)]"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-gray-900 border-transparent"
-                  }`}
+                style={isGroupOpen
+                  ? { color: "#00d4ff", background: "rgba(0,212,255,0.06)", borderColor: "rgba(0,212,255,0.2)" }
+                  : { color: "#64748b", borderColor: "transparent" }}
+                className="flex items-center gap-3 w-full px-4 py-3 text-left rounded-xl transition-all group border hover:text-slate-200 hover:bg-white/5"
               >
                 <Icon
                   size={18}
-                  className={`${isGroupOpen ? "scale-110 text-amber-400" : "group-hover:scale-110"
-                    } transition-transform`}
+                  className={`${isGroupOpen ? "scale-110" : "group-hover:scale-110"} transition-transform`}
                 />
                 <span className="text-sm font-bold tracking-wide flex-1">{group.title}</span>
                 <ChevronRight
                   size={14}
-                  className={`transition-transform duration-300 ${isGroupOpen ? "rotate-90 text-amber-400" : "text-gray-600"
-                    }`}
+                  style={{ color: isGroupOpen ? "#00d4ff" : "#334155" }}
+                  className={`transition-transform duration-300 ${isGroupOpen ? "rotate-90" : ""}`}
                 />
               </button>
 
-              {/* Nested Sections */}
               <div
                 className={`grid transition-all duration-300 ease-in-out ${isGroupOpen
                   ? "grid-rows-[1fr] opacity-100 mt-2"
                   : "grid-rows-[0fr] opacity-0"
                   }`}
               >
-                <div className="overflow-hidden space-y-1 ml-4 border-l border-gray-800/50 pl-2">
+                <div style={{ borderLeft: "1px solid #1e2a3a" }} className="overflow-hidden space-y-1 ml-4 pl-2">
                   {group.sections.map((section) => {
                     const isSectionOpen = openSection === section.title;
 
                     return (
                       <div key={section.title} className="space-y-1">
                         <button
-                          onClick={() =>
-                            setOpenSection(isSectionOpen ? null : section.title)
-                          }
-                          className={`flex items-center justify-between w-full px-3 py-2 text-left rounded-lg transition-all ${isSectionOpen
-                            ? "text-white bg-gray-900/40"
-                            : "text-gray-500 hover:text-gray-300 hover:bg-gray-900/20"
-                            }`}
+                          onClick={() => setOpenSection(isSectionOpen ? null : section.title)}
+                          style={isSectionOpen
+                            ? { color: "#e2e8f0", background: "rgba(255,255,255,0.04)" }
+                            : { color: "#475569" }}
+                          className="flex items-center justify-between w-full px-3 py-2 text-left rounded-lg transition-all hover:text-slate-300 hover:bg-white/5"
                         >
                           <span className="text-xs font-semibold">{section.title}</span>
                           <ChevronRight
                             size={12}
-                            className={`transition-transform duration-300 ${isSectionOpen ? "rotate-90 text-amber-500/70" : "text-gray-700"
-                              }`}
+                            style={{ color: isSectionOpen ? "rgba(0,212,255,0.6)" : "#334155" }}
+                            className={`transition-transform duration-300 ${isSectionOpen ? "rotate-90" : ""}`}
                           />
                         </button>
 
-                        {/* Items */}
                         <div
                           className={`grid transition-all duration-300 ease-in-out ${isSectionOpen
                             ? "grid-rows-[1fr] opacity-100"
                             : "grid-rows-[0fr] opacity-0"
                             }`}
                         >
-                          <div className="overflow-hidden ml-2 border-l border-gray-800/30 pl-3 space-y-0.5 my-1">
+                          <div style={{ borderLeft: "1px solid rgba(30,42,58,0.5)" }} className="overflow-hidden ml-2 pl-3 space-y-0.5 my-1">
                             {section.items.map((item) => {
                               const isActive = pathname === item.path;
                               return (
@@ -189,10 +179,10 @@ export default function Left({
                                   key={item.path}
                                   href={item.path}
                                   onClick={onItemClick}
-                                  className={`block px-3 py-1.5 rounded-md text-[13px] transition-all ${isActive
-                                    ? "text-amber-400 bg-amber-400/5 font-medium"
-                                    : "text-gray-500 hover:text-gray-300"
-                                    }`}
+                                  style={isActive
+                                    ? { color: "#00d4ff", background: "rgba(0,212,255,0.06)" }
+                                    : { color: "#475569" }}
+                                  className="block px-3 py-1.5 rounded-md text-[13px] transition-all hover:text-slate-300"
                                 >
                                   {item.name}
                                 </Link>
